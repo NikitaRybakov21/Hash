@@ -1,3 +1,5 @@
+import java.util.LinkedList;
+
 public class HashTableImpl<K,V> implements HashTable<K,V> {
 
     static class Item<K,V> implements Entry<K,V>{
@@ -31,12 +33,17 @@ public class HashTableImpl<K,V> implements HashTable<K,V> {
         }
     }
 
-    private final  Item<K, V>[] data;
+    private final LinkedList<Item<K, V>>[] data;
     private final Item<K,V> emptyItem;
     private int size;
 
     public HashTableImpl(int initial) {
-        this.data = new Item[initial * 2];
+        this.data = new LinkedList[initial * 2];
+
+        for (int i = 0; i < data.length; i++) {
+            data[i] = new LinkedList<>();
+        }
+
         emptyItem = new Item<>(null,null);
     }
 
@@ -52,15 +59,18 @@ public class HashTableImpl<K,V> implements HashTable<K,V> {
 
         int index = hashFunc(key);
 
-        while (data[index] != null){
+     /* while (data[index] != null){
+
             if(isKeysEquals(data[index], key)){
                 data[index].setValue(value);
             }
             index += getStep(key);
             index %= data.length;
-        }
 
-        data[index] = new Item<>(key, value);
+        } */
+
+        data[index].add(new Item<>(key, value));
+
         size++;
 
         return true;
@@ -74,7 +84,6 @@ public class HashTableImpl<K,V> implements HashTable<K,V> {
         if(item == emptyItem){
             return false;
         }
-
         return item.getKey() == null ? key == null
                 : item.getKey().equals(key);
     }
@@ -82,39 +91,37 @@ public class HashTableImpl<K,V> implements HashTable<K,V> {
     private int indexOf(K key){
         int index = hashFunc(key);
 
-        int count = 0;
-        while (count < data.length){
-            Item<K, V> item = data[index];
+        for (int i = 0; i < data[index].size(); i++) {
+            Item<K, V> item = data[index].get(i);
+
             if(item == null){
                 break;
-            } else if (isKeysEquals(item, key)){
-                return index;
+            } else if(isKeysEquals(item, key)) {
+                return i;
             }
-
-            count++;
-            index += getStep(key);
-            index %= data.length;
-
         }
+
         return -1;
     }
 
     @Override
     public V get(K key) {
-        int index = indexOf(key);
-        return index == -1 ? null : data[index].getValue();
+        int index = hashFunc(key);
+        return index == -1 ? null : data[index].get(indexOf(key)).getValue();
     }
 
     @Override
     public V remove(K key) {
-        int index = indexOf(key);
+        int index = hashFunc(key);
 
         if(index == -1){
             return null;
         }
 
-        Item<K,V> tempItem = data[index];
-        data[index] = emptyItem;
+        Item<K,V> tempItem = data[index].get(indexOf(key));
+        data[index].remove(tempItem);
+
+        //data[index] = emptyItem;
         return tempItem.getValue();
     }
 
@@ -133,9 +140,9 @@ public class HashTableImpl<K,V> implements HashTable<K,V> {
         System.out.println("--------------------");
 
         for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d = [%s]%n", i, data[i]);
+            System.out.printf("%d = [%s]%n",i,data[i]);
         }
-        
+
         System.out.println("--------------------");
     }
 }
